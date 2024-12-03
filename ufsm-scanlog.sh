@@ -63,25 +63,26 @@ copiar_logs_servidores() {
     local pastaLogs="$2"
     echo -e "\nObtendo os arquivos de logs dos servidores configurados..."
     for servidor in "${servidores[@]}"; do
-        local ip_log_path="${servidor%:*}"
-        local remote_path="${servidor#*:}"
-        local pastaServidor="$pastaLogs/$(echo "$ip_log_path" | tr '.' '_')"
+        local host_path="${servidor%:*}"
+        local pastaServidor="$pastaLogs/$host_path"
         mkdir -p "$pastaServidor"
-        echo "📂 Copiando logs de $ip_log_path..."
-        scp -P $sshPort "$ip_log_path:$remote_path" "$pastaServidor/"
+        echo "📂 Copiando logs de $host_path para $pastaServidor usando key $chavePrivada"
+        echo "Comando: rsync -avL -e \"ssh -p $sshPort -i $chavePrivada -o StrictHostKeyChecking=no\" $servidor $pastaServidor"
+        rsync -avL -e "ssh -p $sshPort -i $chavePrivada -o StrictHostKeyChecking=no" "$servidor" "$pastaServidor"
         if [ $? -eq 0 ]; then
-            echo "✅ Logs copiados com sucesso de $ip_log_path."
+            echo "✅ Logs copiados com sucesso de $host_path."
         else
-            echo "❌ Falha ao copiar logs de $ip_log_path."
+            echo "❌ Falha ao copiar logs de $host_path."
+            exit 1
         fi
     done
 }
 
 
 # Função para processar logs para uma data específica
-process_logs_for_date() {
-    local data="$1"
-    local pastaBase="$stagePath/logs/logs-$data"
+process_logs() {
+    local data=$(date +"%Y-%m-%d")
+    local pastaBase="$stagePath/logs-$data"
     local pastaLogs="$pastaBase/logs"
     local pastaBaseIndicadores="$pastaBase/result/indicadores"
     local pastaBaseExtracoes="$pastaBase/result/extracoes"
@@ -99,7 +100,6 @@ process_logs_for_date() {
     mkdir -p "$pastaBaseIndicadores"
     rm -f "$pastaBaseExtracoes"/*.log
     rm -f "$pastaBaseIndicadores"/*.txt
-    cp modelo.inc "$pastaBase/modelo-sieweb-scanlog-para-consulta.inc"
 
     ############################# Coleta dos logs #############################################
 
@@ -112,7 +112,8 @@ process_logs_for_date() {
     echo "⏳ Processando extratores de texto simples..."
     for entry in "${extratoresArray[@]}"; do
         IFS='|' read -r termo contexto_a contexto_b arquivo <<< "$entry"
-        (cd "$pastaLogs" && grep -ri -F "$termo" -A "$contexto_a" -B "$contexto_b" > "$pastaBaseExtracoes/$arquivo")
+        echo "Comando: grep -ri -F \"$termo\" -A \"$contexto_a\" -B \"$contexto_b\" \"$pastaLogs\" > $pastaBaseExtracoes/$arquivo"
+        grep -ri -F "$termo" -A "$contexto_a" -B "$contexto_b" "$pastaLogs" > "$pastaBaseExtracoes/$arquivo"
     done
 
     ##########################################################################################
@@ -121,7 +122,8 @@ process_logs_for_date() {
     rm -f "$nomeArquivoContador"
     for entry in "${contadoresArray[@]}"; do
         IFS='|' read -r termo msg <<< "$entry"
-        local total=$(cd "$pastaLogs" && grep -ri -c -F "$termo" | awk -F':' '{s+=$2} END {print s}')
+        echo  "Comando: total=\$(grep -ri -c -F \"$termo\" \"$pastaLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        local total=$(grep -ri -c -F "$termo" "$pastaLogs" | awk -F':' '{s+=$2} END {print s}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -130,7 +132,8 @@ process_logs_for_date() {
     echo "⏳ Processando contadores de regex..."
     for entry in "${contadoresRegexArray[@]}"; do
         IFS='#' read -r termo msg <<< "$entry"
-        local total=$(cd "$pastaLogs" && grep -ri -c -E "$termo" | awk -F':' '{s+=$2} END {print s}')
+        echo "Comando total=\$(grep -ri -c -E \"$termo\" \"$pastaLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        local total=$(grep -ri -c -E "$termo" "$pastaLogs" | awk -F':' '{s+=$2} END {print s}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -139,7 +142,8 @@ process_logs_for_date() {
     echo "⏳ Processando acumuladores de regex..."
     for entry in "${acumuladoresArray[@]}"; do
         IFS='|' read -r termo termo2 msg <<< "$entry"
-        local total=$(grep -ri -E -o "$termo" "$pastaLogs/timers" | grep -E -o "$termo2" | awk '{s+=$1} END {print (s ? s : 0)}')
+        echo "Comando: total=\$(grep -ri -E -o \"$termo\" \"$pastaLogs\" | grep -E -o "$termo2" | awk '{s+=$1} END {print (s ? s : 0)}')"
+        local total=$(grep -ri -E -o "$termo" "$pastaLogs" | grep -E -o "$termo2" | awk '{s+=$1} END {print (s ? s : 0)}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -147,7 +151,7 @@ process_logs_for_date() {
     ##########################################################################################
 
 
-    # Ordena os contadores
+    echo "⏳ Ordenando contadores..."
     cat "$nomeArquivoContador" | sort > "$nomeArquivoContadorTmp2"
     formatArquivoComoTabela "$nomeArquivoContadorTmp2" "$nomeArquivoContadorTabela"
     rm -f "$nomeArquivoContador"
@@ -155,6 +159,7 @@ process_logs_for_date() {
 
     ##########################################################################################
 
+    echo "⏳ Processando mensagens de negócio..."
     local resultadosArray=()
     rm -f "$nomeArquivoMensagensNegocio"
     for padrao in "${extratorMensagemNegocioArray[@]}"; do
@@ -165,7 +170,8 @@ process_logs_for_date() {
     printf "%10s | %-50s\n" "Quantidade" "Mensagens de negócio" > "$nomeArquivoMensagensNegocio"
     printf "%10s | %-50s\n" "----------" "--------------------------------------------------" >> "$nomeArquivoMensagensNegocio"
     for termo in "${resultadosArray[@]}"; do
-        total=$(cd "$pastaLogs" && grep -ri -c -E "$termo" | awk -F':' '{s+=$2} END {print s}')
+        echo "Comando: total=\$(grep -ri -c -E \"$termo\" \"$pastaLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        total=$(grep -ri -c -E "$termo" "$pastaLogs" | awk -F':' '{s+=$2} END {print s}')
         printf "%10s | %-50s\n" "$total" "$termo" >> "$nomeArquivoMensagensNegocio"
     done
 
@@ -178,10 +184,14 @@ process_logs_for_date() {
         rm -f "$nomeArquivoAcumCondTmp1"
         rm -f "$nomeArquivoAcumCond"
         while IFS= read -r line; do
+            echo aqui
+            echo "$line" "$regex" "$nomeArquivoAcumCondTmp1"
             processaAcum "$line" "$regex" "$nomeArquivoAcumCondTmp1"
         done < <(grep -E -ri "$regex" "$pastaLogs")
-        uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaBaseExtracoes/$nomeArquivoAcumCond"
-        rm -f $nomeArquivoAcumCondTmp1
+        if [ -f "$nomeArquivoAcumCondTmp1" ]; then
+          uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaBaseExtracoes/$nomeArquivoAcumCond"
+          rm -f $nomeArquivoAcumCondTmp1
+        fi
     done
 
     echo "-----------------------------------------------------------------------------------"
@@ -191,50 +201,5 @@ process_logs_for_date() {
 
 
 echo -e "\033[01;33mAnalisador de logs sieweb-scanlog\033[01;37m ( Versão: $VERSAO_SCRIPT Data: $CURRENT_DATE )"
+process_logs
 
-# Definir a data padrão para ontem
-data=$(date -d "yesterday" +"%Y-%m-%d")
-
-# Verifica se um argumento foi passado
-if [ -n "$1" ]; then
-    # Verifica se o argumento é um intervalo de dias (formato DD-DD)
-    if [[ "$1" =~ ^([0-9]{1,2})-([0-9]{1,2})$ ]]; then
-        start_day=${BASH_REMATCH[1]}
-        end_day=${BASH_REMATCH[2]}
-        # Loop para processar cada dia no intervalo
-        for day in $(seq "$start_day" "$end_day"); do
-            dia=$(printf '%02d' "$day")
-            data=$(date +"%Y-%m-$dia")
-            if is_valid_date "$data"; then
-                process_logs_for_date "$data"
-            else
-                echo "Data inválida: $data"
-            fi
-        done
-    # Verifica se o argumento é uma data completa no formato YY-MM-DD
-    elif [[ "$1" =~ ^[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
-        data="20$1" # Adiciona o prefixo "20" para o ano
-        if is_valid_date "$data"; then
-            process_logs_for_date "$data"
-        else
-            echo "Data inválida: $data"
-            exit 1
-        fi
-    # Verifica se o argumento é apenas um dia (2 dígitos)
-    elif [[ "$1" =~ ^[0-9]{1,2}$ ]]; then
-        dia=$(printf '%02d' "$1")
-        data=$(date +"%Y-%m-$dia")
-        if is_valid_date "$data"; then
-            process_logs_for_date "$data"
-        else
-            echo "Data inválida: $data"
-            exit 1
-        fi
-    else
-        echo "Formato de data inválido. Use YY-MM-DD, DD, ou um intervalo DD-DD."
-        exit 1
-    fi
-else
-    # Sem argumentos: processa a data padrão (ontem)
-    process_logs_for_date "$data"
-fi
