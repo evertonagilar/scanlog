@@ -1,19 +1,18 @@
-# config.inc
-# Arquivo de configuraÁ„o para armazenar IPs dos servidores
+# Arquivo de configura√ß√£o
 
-# Lista de servidores com os caminhos dos logs para extrair
-# Pode ser caminho SSH, sendo que nesse caso È preciso ter chave ssh para o scan conseguir copiar os logs
+
+# Lista de servidores com os caminhos dos logs
+# Pode ser caminho SSH, sendo que nesse caso √© preciso ter chave ssh para o scan conseguir copiar os logs
 declare -a servidores=(
-  "wportal04:/var/log/containers/prod-sieweb*.log"
-  "wportal05:/var/log/containers/prod-sieweb*.log"
+  "interno@wportal04.si.ufsm.br:/var/log/containers/prod-sieweb*.log"
 )
 
 # Porta ssh
 sshPort=2222
 
-# Quando true, o scan ir· obter os arquivos de logs para via ssh
-copyWithSSH=false
+# Chave privada para acessar as m√°quinas
+chavePrivada=chaveprivada.key
 
-# Pasta onde ser· armazenado o resultado do scan
-stagePath="/home/$(whoami)/Desktop"
+# Pasta onde ser√° armazenado o resultado do scan
+stagePath="/var/log/ufsm-scan"
 

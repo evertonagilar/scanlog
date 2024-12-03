@@ -257,7 +257,7 @@ declare -a contadoresRegexArray=(
 #
 
 declare -a acumuladoresArray=(
-    "Processamento encerrado. [0-9]{1,3} notificações processadas|[0-9]{1,3}|timer/notificações processadas"
+    "Processamento encerrado. [0-9,]{1,3} notificações processadas|[0-9]{1,3}|timer/notificações processadas"
     "Buscando [0-9]{1,3} mensagens a enviar|[0-9]{1,3}|e-mails enviados via MensagemTimerBean"
     "Iniciando processamento de [0-9]{1,3} empenhos|[0-9]{1,3}|timer/empenhos processados"
     "[0-9]{1,3} producoes encontradas para carga|[0-9]{1,3}|produções para carga no Lattes"
