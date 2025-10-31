@@ -640,6 +640,151 @@ gerar_top_modulos_subsistema() {
     rm -f "$tmpAggregated" "$tmpTop"
 }
 
+gerar_report_data() {
+    local pastaBase="$1"
+    local dataExecucao="$2"
+    local pastaResult="$pastaBase/result"
+    local destino="report/data/report-data.json"
+
+    echo "⏳ Gerando arquivo JSON para o relatório..."
+
+    if [[ ! -d "$pastaResult" ]]; then
+        echo "⚠️ Pasta de resultados \"$pastaResult\" não encontrada; relatório não gerado."
+        return
+    fi
+
+    mkdir -p "$(dirname "$destino")"
+
+    python3 - "$pastaResult" "$destino" "$dataExecucao" <<'PY'
+import json
+import re
+import sys
+import datetime
+from pathlib import Path
+
+base_dir = Path(sys.argv[1])
+destino = Path(sys.argv[2])
+execucao = sys.argv[3]
+
+def parse_table(path: Path, columns):
+    rows = []
+    if not path.exists():
+        return rows
+    pattern_int = re.compile(r'^-?\d+$')
+    with path.open(encoding='utf-8', errors='ignore') as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith('-') or '|' not in raw_line:
+                continue
+            parts = [piece.strip() for piece in raw_line.split('|')]
+            if len(parts) < len(columns):
+                continue
+            if columns[0].startswith('int:') and not pattern_int.match(parts[0]):
+                continue
+            row = {}
+            try:
+                for idx, name in enumerate(columns):
+                    value = parts[idx]
+                    if name.startswith('int:'):
+                        row[name.split(':', 1)[1]] = int(value)
+                    elif name.startswith('float:'):
+                        row[name.split(':', 1)[1]] = float(value.replace(',', '.'))
+                    else:
+                        row[name] = value
+            except ValueError:
+                continue
+            rows.append(row)
+    return rows
+
+def parse_performance(path: Path):
+    data = {}
+    if not path.exists():
+        return data
+    pattern = re.compile(r'(.*?):\s*(.*)')
+    with path.open(encoding='utf-8', errors='ignore') as handle:
+        for line in handle:
+            match = pattern.match(line.strip())
+            if not match:
+                continue
+            key, value = match.groups()
+            mapping = {
+                'Total de medições': 'total_medicoes',
+                'Média (ms)': 'media_ms',
+                'Mínimo (ms)': 'min_ms',
+                'Máximo (ms)': 'max_ms',
+                'Percentil 50 (ms)': 'p50_ms',
+                'Percentil 95 (ms)': 'p95_ms',
+                'Percentil 99 (ms)': 'p99_ms',
+            }
+            key_norm = mapping.get(key, key)
+            try:
+                parsed = float(value.replace(',', '.')) if '.' in value or ',' in value else int(value)
+            except ValueError:
+                parsed = value
+            data[key_norm] = parsed
+    return data
+
+def parse_ranked(path: Path, schema):
+    rows = []
+    if not path.exists():
+        return rows
+    with path.open(encoding='utf-8', errors='ignore') as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith('Rank') or set(line) <= {'-', '+', ' '} or '|' not in raw_line:
+                continue
+            parts = [piece.strip() for piece in raw_line.split('|')]
+            if len(parts) < len(schema):
+                continue
+            row = {}
+            skip = False
+            for part, (kind, key) in zip(parts, schema):
+                try:
+                    if kind == 'int':
+                        row[key] = int(part)
+                    elif kind == 'float':
+                        row[key] = float(part.replace(',', '.'))
+                    else:
+                        row[key] = part
+                except ValueError:
+                    skip = True
+                    break
+            if not skip:
+                rows.append(row)
+    return rows
+
+report_data = {
+    'fonte': str(base_dir),
+    'geradoEm': datetime.datetime.now().isoformat(timespec='seconds'),
+    'execucao': execucao,
+    'contadores': parse_table(base_dir / 'indicadores' / 'tabela-contadores.txt', ['int:quantidade', 'descricao']),
+    'mensagensNegocio': parse_table(base_dir / 'indicadores' / 'tabela-mensagens-negocio.txt', ['int:quantidade', 'mensagem']),
+    'desempenho': parse_performance(base_dir / 'extracoes' / 'stats_performance_percentis.log'),
+    'topClasses': parse_ranked(base_dir / 'extracoes' / 'top_classes_usadas.log', [
+        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'classe')
+    ]),
+    'topMetodos': parse_ranked(base_dir / 'extracoes' / 'top_metodos_pesados.log', [
+        ('int', 'rank'), ('int', 'chamadas'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'metodo')
+    ]),
+    'topModulos': parse_ranked(base_dir / 'extracoes' / 'top_modulos_pesados.log', [
+        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'modulo')
+    ]),
+    'topModulosSubsistema': parse_ranked(base_dir / 'extracoes' / 'top_modulos_subsistema.log', [
+        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'modulo')
+    ]),
+}
+
+destino.write_text(json.dumps(report_data, ensure_ascii=False, indent=2), encoding='utf-8')
+print(f'Relatório consolidado em {destino}')
+PY
+    local status=$?
+    if [[ $status -eq 0 ]]; then
+        echo "✅ Arquivo $destino atualizado."
+    else
+        echo "❌ Falha ao gerar $destino."
+    fi
+}
+
 
 # Função para processar logs para uma data específica
 process_logs() {
@@ -771,6 +916,8 @@ process_logs() {
     done
 
     echo "-----------------------------------------------------------------------------------"
+
+    gerar_report_data "$pastaBase" "$data"
 }
 
 ################################ MAIN ##########################################################
