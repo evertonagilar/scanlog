@@ -198,6 +198,7 @@ declare -a contadoresArray=(
     'org.hibernate.QueryException: could not resolve property|Query HQL/JPQL falhou pois não resolveu property'
     'Fluxo de dispensa de disciplina configurado incorretamente|Fluxo dispensa configurado incorretamente'
     'Fluxo para requisitar processo não configurado|Fluxo para requisitar processo não configurado'
+    'SQL Warning Code: 437|avisos SQL Warning Code 437'
     'WARNING: An illegal reflective access operation has occurred|acessos ilegais com reflection'
     'A soft-locked cache entry was expired by the underlying Ehcache|soft-locked expirado pelo ehcache'
     'but failed to remove it when the web application was stopped|possível memory leak em threadvar detectado durante deployment de portal'
