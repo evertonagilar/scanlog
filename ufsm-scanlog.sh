@@ -20,7 +20,25 @@ CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 
 # Carrega as variáveis de configuração dos IPs dos servidores
 source config.inc
-source modelo.inc
+
+if [[ -z "${modeloArquivo:-}" ]]; then
+    modeloArquivo="modelo.inc"
+fi
+
+if [[ -z "${normalizaLogs:-}" ]]; then
+    normalizaLogs="true"
+fi
+
+if [[ -z "${baseModule:-}" ]]; then
+    baseModule="br\.ufsm\.cpd\.sie"
+fi
+
+if [[ ! -f "$modeloArquivo" ]]; then
+    echo "❌ Arquivo de modelo '${modeloArquivo}' nao encontrado."
+    exit 1
+fi
+
+source "$modeloArquivo"
 
 if ! command -v jq >/dev/null 2>&1; then
     echo "❌ A dependência obrigatória 'jq' não foi encontrada no PATH."
@@ -140,7 +158,7 @@ gerar_top_metodos_pesados() {
     echo "⏳ Classificando métodos pesados..."
 
     if [[ ! -f "$arquivoEntrada" || ! -s "$arquivoEntrada" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking." > "$arquivoSaida"
+        touch "$arquivoSaida"
         return
     fi
 
@@ -149,7 +167,7 @@ gerar_top_metodos_pesados() {
     tmpAggregated="$(mktemp)"
     tmpTop="$(mktemp)"
 
-    awk -F':' '
+    awk -F':' -v baseModuleRegex="$baseModule" '
     function trim(str) {
         sub(/^[[:space:]]+/, "", str)
         sub(/[[:space:]]+$/, "", str)
@@ -190,7 +208,7 @@ gerar_top_metodos_pesados() {
     ' "$arquivoEntrada" > "$tmpAggregated"
 
     if [[ ! -s "$tmpAggregated" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmpAggregated" "$tmpTop"
         return
     fi
@@ -218,7 +236,7 @@ gerar_top_classes_usadas() {
     echo "⏳ Classificando classes mais acionadas..."
 
     if [[ ! -f "$arquivoEntrada" || ! -s "$arquivoEntrada" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de classes." > "$arquivoSaida"
+        touch "$arquivoSaida"
         return
     fi
 
@@ -227,7 +245,7 @@ gerar_top_classes_usadas() {
     tmpAggregated="$(mktemp)"
     tmpTop="$(mktemp)"
 
-    awk -F':' '
+    awk -F':' -v baseModuleRegex="$baseModule" '
     function trim(str) {
         sub(/^[[:space:]]+/, "", str)
         sub(/[[:space:]]+$/, "", str)
@@ -247,6 +265,9 @@ gerar_top_classes_usadas() {
 
             classe = metodo
             sub(/\.[^.]*\(.*/, "", classe)
+            if (baseModuleRegex != "") {
+                gsub("^" baseModuleRegex "\\.", "", classe)
+            }
 
             tempo = line
             sub(/^.*demorou </, "", tempo)
@@ -271,7 +292,7 @@ gerar_top_classes_usadas() {
     ' "$arquivoEntrada" > "$tmpAggregated"
 
     if [[ ! -s "$tmpAggregated" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de classes." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmpAggregated" "$tmpTop"
         return
     fi
@@ -299,7 +320,7 @@ gerar_top_modulos_pesados() {
     echo "⏳ Classificando módulos com maior tempo total..."
 
     if [[ ! -f "$arquivoEntrada" || ! -s "$arquivoEntrada" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de módulos." > "$arquivoSaida"
+        touch "$arquivoSaida"
         return
     fi
 
@@ -308,7 +329,7 @@ gerar_top_modulos_pesados() {
     tmpAggregated="$(mktemp)"
     tmpTop="$(mktemp)"
 
-    awk -F':' '
+    awk -F':' -v baseModuleRegex="$baseModule" '
     function trim(str) {
         sub(/^[[:space:]]+/, "", str)
         sub(/[[:space:]]+$/, "", str)
@@ -331,6 +352,9 @@ gerar_top_modulos_pesados() {
             modulo = base
             sub(/\.[^.]*$/, "", modulo)
             sub(/\.[^.]*$/, "", modulo)
+            if (baseModuleRegex != "") {
+                gsub("^" baseModuleRegex "\\.", "", modulo)
+            }
 
             tempo = line
             sub(/^.*demorou </, "", tempo)
@@ -355,7 +379,7 @@ gerar_top_modulos_pesados() {
     ' "$arquivoEntrada" > "$tmpAggregated"
 
     if [[ ! -s "$tmpAggregated" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de módulos." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmpAggregated" "$tmpTop"
         return
     fi
@@ -376,6 +400,63 @@ gerar_top_modulos_pesados() {
 }
 
 
+gerar_top_uso_metodos() {
+    local pastaLogs="$1"
+    local arquivoSaida="$2"
+    local baseModuleRegex="${baseModule:-}"
+
+    echo "⏳ Classificando métodos mais invocados..."
+
+    if [[ ! -d "$pastaLogs" ]]; then
+        touch "$arquivoSaida"
+        return
+    fi
+
+    python3 - "$pastaLogs" "$arquivoSaida" "$baseModuleRegex" <<'PY'
+import sys
+import pathlib
+import re
+from collections import Counter
+
+logs_dir = pathlib.Path(sys.argv[1])
+saida = pathlib.Path(sys.argv[2])
+base_regex = sys.argv[3]
+
+if not logs_dir.exists():
+    saida.touch()
+    sys.exit(0)
+
+if base_regex:
+    pattern = re.compile(r'at\s+(' + base_regex + r'[A-Za-z0-9_$.]*\.[A-Za-z0-9_$<>]+)\s*\(')
+else:
+    pattern = re.compile(r'at\s+([A-Za-z0-9_$.]+\.[A-Za-z0-9_$<>]+)\s*\(')
+
+contador = Counter()
+
+for log_path in sorted(logs_dir.rglob('*.log')):
+    try:
+        with log_path.open(encoding='utf-8', errors='ignore') as handle:
+            for line in handle:
+                match = pattern.search(line)
+                if match:
+                    contador[match.group(1)] += 1
+    except OSError:
+        continue
+
+top = sorted(contador.items(), key=lambda item: (-item[1], item[0]))[:100]
+
+with saida.open('w', encoding='utf-8') as out:
+    if not top:
+        out.write('')
+        sys.exit(0)
+    out.write(f"{'Rank':>4} | {'Chamadas':>8} | Metodo\n")
+    out.write(f"{'----':>4}-+-{'--------':>8}-+-{'-' * 40}\n")
+    for idx, (metodo, total) in enumerate(top, start=1):
+        out.write(f"{idx:4d} | {total:8d} | {metodo}\n")
+PY
+}
+
+
 gerar_percentis_performance() {
     local arquivoEntrada="$1"
     local arquivoSaida="$2"
@@ -383,7 +464,7 @@ gerar_percentis_performance() {
     echo "⏳ Calculando percentis de desempenho..."
 
     if [[ ! -f "$arquivoEntrada" || ! -s "$arquivoEntrada" ]]; then
-        echo "Sem dados de desempenho encontrados para calcular percentis." > "$arquivoSaida"
+        touch "$arquivoSaida"
         return
     fi
 
@@ -417,7 +498,7 @@ gerar_percentis_performance() {
     ' "$arquivoEntrada" > "$tmpDuracoes"
 
     if [[ ! -s "$tmpDuracoes" ]]; then
-        echo "Sem dados de desempenho encontrados para calcular percentis." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmpDuracoes" "$tmpOrdenado"
         return
     fi
@@ -500,7 +581,7 @@ gerar_motivos_gateway_pix() {
         }' > "$tmp"
 
     if [[ ! -s "$tmp" ]]; then
-        echo "Nenhum motivo de erro PIX encontrado." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmp"
         return
     fi
@@ -555,6 +636,59 @@ gerar_colecoes_assumindo_primeiro() {
 }
 
 
+gerar_erros_mbean() {
+    local pastaLogs="$1"
+    local pastaSaida="$2"
+
+    echo "⏳ Gerando extracoes por MBean..."
+    find "$pastaSaida" -maxdepth 1 -name 'mbean_*.log' -type f -delete 2>/dev/null || true
+
+    python3 - "$pastaLogs" "$pastaSaida" <<'PY'
+import pathlib
+import re
+import sys
+from collections import defaultdict
+
+pasta_logs = pathlib.Path(sys.argv[1])
+pasta_saida = pathlib.Path(sys.argv[2])
+pasta_saida.mkdir(parents=True, exist_ok=True)
+
+pattern = re.compile(r'([A-Za-z0-9_.]+MBean)')
+context_pre = 12
+context_post = 12
+
+acumulado = defaultdict(list)
+
+for log_path in sorted(pasta_logs.rglob("*.log")):
+    try:
+        lines = log_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except Exception:
+        continue
+
+    total = len(lines)
+    for idx, line in enumerate(lines):
+        matches = pattern.findall(line)
+        if not matches:
+            continue
+
+        start = max(0, idx - context_pre)
+        end = min(total, idx + context_post + 1)
+        trecho = "\n".join(lines[start:end])
+        header = f"# Arquivo: {log_path}\n"
+        bloco = f"{header}{trecho}\n\n"
+
+        for match in matches:
+            nome = match.split(".")[-1]
+            seguro = re.sub(r"[^A-Za-z0-9_-]", "_", nome)
+            acumulado[seguro].append(bloco)
+
+for nome_mbean, blocos in acumulado.items():
+    destino = pasta_saida / f"mbean_{nome_mbean}.log"
+    destino.write_text("".join(blocos), encoding="utf-8")
+PY
+}
+
+
 gerar_top_modulos_subsistema() {
     local arquivoEntrada="$1"
     local arquivoSaida="$2"
@@ -562,7 +696,7 @@ gerar_top_modulos_subsistema() {
     echo "⏳ Classificando módulos/subsistemas com maior tempo total..."
 
     if [[ ! -f "$arquivoEntrada" || ! -s "$arquivoEntrada" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de módulos/subsistemas." > "$arquivoSaida"
+        touch "$arquivoSaida"
         return
     fi
 
@@ -590,7 +724,9 @@ gerar_top_modulos_subsistema() {
             sub(/> demorou <.*$/, "", metodo)
 
             chave = metodo
-            sub(/br\.ufsm\.cpd\.sie\./, "", chave)
+            if (baseModuleRegex != "") {
+                gsub("^" baseModuleRegex "\\.", "", chave)
+            }
             split(chave, partes, "\\.")
             if (length(partes) < 3) next
             modulo = partes[1]
@@ -620,7 +756,7 @@ gerar_top_modulos_subsistema() {
     ' "$arquivoEntrada" > "$tmpAggregated"
 
     if [[ ! -s "$tmpAggregated" ]]; then
-        echo "Sem dados de desempenho encontrados para gerar ranking de módulos/subsistemas." > "$arquivoSaida"
+        touch "$arquivoSaida"
         rm -f "$tmpAggregated" "$tmpTop"
         return
     fi
@@ -766,6 +902,9 @@ report_data = {
     'topMetodos': parse_ranked(base_dir / 'extracoes' / 'top_metodos_pesados.log', [
         ('int', 'rank'), ('int', 'chamadas'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'metodo')
     ]),
+    'topUsoMetodos': parse_ranked(base_dir / 'extracoes' / 'top_uso_metodo.log', [
+        ('int', 'rank'), ('int', 'chamadas'), ('str', 'metodo')
+    ]),
     'topModulos': parse_ranked(base_dir / 'extracoes' / 'top_modulos_pesados.log', [
         ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'modulo')
     ]),
@@ -798,6 +937,7 @@ process_logs() {
     local nomeArquivoContadorTmp2="$(mktemp)"
     local nomeArquivoContadorTabela="$pastaBaseIndicadores/tabela-contadores.txt"
     local nomeArquivoMensagensNegocio="$pastaBaseIndicadores/tabela-mensagens-negocio.txt"
+    local pastaFonteLogs
     local pasta
 
     echo -e "\n🧯 Iniciando a análise em $data\n"
@@ -814,7 +954,13 @@ process_logs() {
     ############################# Coleta dos logs #############################################
 
     copiar_logs_servidores "$data" "$pastaLogs"
-    normalizar_logs_mensagens "$pastaLogs" "$pastaLogsNormalizados"
+
+    if [[ "${normalizaLogs,,}" == "true" ]]; then
+        normalizar_logs_mensagens "$pastaLogs" "$pastaLogsNormalizados"
+        pastaFonteLogs="$pastaLogsNormalizados"
+    else
+        pastaFonteLogs="$pastaLogs"
+    fi
 
     ############################# Inicio extrações #############################################
 
@@ -823,16 +969,18 @@ process_logs() {
     echo "⏳ Processando extratores de texto simples..."
     for entry in "${extratoresArray[@]}"; do
         IFS='|' read -r termo contexto_a contexto_b arquivo <<< "$entry"
-        echo "Comando: grep -ri -F \"$termo\" -A \"$contexto_a\" -B \"$contexto_b\" \"$pastaLogsNormalizados\" > $pastaBaseExtracoes/$arquivo"
-        grep -ri -F "$termo" -A "$contexto_a" -B "$contexto_b" "$pastaLogsNormalizados" > "$pastaBaseExtracoes/$arquivo"
+        echo "Comando: grep -ri -F \"$termo\" -A \"$contexto_a\" -B \"$contexto_b\" \"$pastaFonteLogs\" > $pastaBaseExtracoes/$arquivo"
+        grep -ri -F "$termo" -A "$contexto_a" -B "$contexto_b" "$pastaFonteLogs" > "$pastaBaseExtracoes/$arquivo"
     done
     gerar_top_metodos_pesados "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_metodos_pesados.log"
+    gerar_top_uso_metodos "$pastaFonteLogs" "$pastaBaseExtracoes/top_uso_metodo.log"
     gerar_top_classes_usadas "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_classes_usadas.log"
     gerar_top_modulos_pesados "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_modulos_pesados.log"
     gerar_top_modulos_subsistema "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_modulos_subsistema.log"
     gerar_percentis_performance "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/stats_performance_percentis.log"
-    gerar_motivos_gateway_pix "$pastaLogsNormalizados" "$pastaBaseExtracoes/motivos_gateway_pix.log"
-    gerar_colecoes_assumindo_primeiro "$pastaLogsNormalizados" "$pastaBaseExtracoes/colecoes_assumindo_primeiro.log"
+    gerar_motivos_gateway_pix "$pastaFonteLogs" "$pastaBaseExtracoes/motivos_gateway_pix.log"
+    gerar_colecoes_assumindo_primeiro "$pastaFonteLogs" "$pastaBaseExtracoes/colecoes_assumindo_primeiro.log"
+    gerar_erros_mbean "$pastaFonteLogs" "$pastaBaseExtracoes"
 
     ##########################################################################################
 
@@ -840,8 +988,8 @@ process_logs() {
     rm -f "$nomeArquivoContador"
     for entry in "${contadoresArray[@]}"; do
         IFS='|' read -r termo msg <<< "$entry"
-        echo  "Comando: total=\$(grep -ri -c -F \"$termo\" \"$pastaLogsNormalizados\" | awk -F':' '{s+=$2} END {print s}')"
-        local total=$(grep -ri -c -F "$termo" "$pastaLogsNormalizados" | awk -F':' '{s+=$2} END {print s}')
+        echo  "Comando: total=\$(grep -ri -c -F \"$termo\" \"$pastaFonteLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        local total=$(grep -ri -c -F "$termo" "$pastaFonteLogs" | awk -F':' '{s+=$2} END {print s}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -850,8 +998,8 @@ process_logs() {
     echo "⏳ Processando contadores de regex..."
     for entry in "${contadoresRegexArray[@]}"; do
         IFS='#' read -r termo msg <<< "$entry"
-        echo "Comando total=\$(grep -ri -c -E \"$termo\" \"$pastaLogsNormalizados\" | awk -F':' '{s+=$2} END {print s}')"
-        local total=$(grep -ri -c -E "$termo" "$pastaLogsNormalizados" | awk -F':' '{s+=$2} END {print s}')
+        echo "Comando total=\$(grep -ri -c -E \"$termo\" \"$pastaFonteLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        local total=$(grep -ri -c -E "$termo" "$pastaFonteLogs" | awk -F':' '{s+=$2} END {print s}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -860,8 +1008,8 @@ process_logs() {
     echo "⏳ Processando acumuladores de regex..."
     for entry in "${acumuladoresArray[@]}"; do
         IFS='|' read -r termo termo2 msg <<< "$entry"
-        echo "Comando: total=\$(grep -ri -E -o \"$termo\" \"$pastaLogsNormalizados\" | grep -E -o \"$termo2\" | awk '{s+=\$1} END {print (s ? s : 0)}')"
-        local total=$(grep -ri -E -o "$termo" "$pastaLogsNormalizados" | grep -E -o "$termo2" | awk '{s+=$1} END {print (s ? s : 0)}')
+        echo "Comando: total=\$(grep -ri -E -o \"$termo\" \"$pastaFonteLogs\" | grep -E -o \"$termo2\" | awk '{s+=\$1} END {print (s ? s : 0)}')"
+        local total=$(grep -ri -E -o "$termo" "$pastaFonteLogs" | grep -E -o "$termo2" | awk '{s+=$1} END {print (s ? s : 0)}')
         echo "$msg = $total" >> "$nomeArquivoContador"
     done
 
@@ -884,7 +1032,7 @@ process_logs() {
         while IFS= read -r resultado; do
             [[ -z "$resultado" ]] && continue
             resultadosArray+=("$resultado")  # Adiciona o item ao array
-        done < <(grep -ri -h -E -o "$padrao" "$pastaLogsNormalizados" \
+        done < <(grep -ri -h -E -o "$padrao" "$pastaFonteLogs" \
             | tr -d '(){}|' \
             | sed 's/^[[:space:]]*//' \
             | grep -E -v "(Caused by|ConstraintViolationException|org\.hibernate|javax\.persistence|javax\.ejb|thrown from|Row was updated|codigoErro|query|return|unique|ResultSet|Transaction|aborted|exception|failure|underlying|java\.rmi|null identifier|Unable to find|property|googleapis|attempted merging)" \
@@ -893,8 +1041,8 @@ process_logs() {
     printf "%10s | %-50s\n" "Quantidade" "Mensagens de negócio" > "$nomeArquivoMensagensNegocio"
     printf "%10s | %-50s\n" "----------" "--------------------------------------------------" >> "$nomeArquivoMensagensNegocio"
     for termo in "${resultadosArray[@]}"; do
-        echo "Comando: total=\$(grep -ri -c -F \"$termo\" \"$pastaLogsNormalizados\" | awk -F':' '{s+=$2} END {print s}')"
-        total=$(grep -ri -c -F "$termo" "$pastaLogsNormalizados" | awk -F':' '{s+=$2} END {print s}')
+        echo "Comando: total=\$(grep -ri -c -F \"$termo\" \"$pastaFonteLogs\" | awk -F':' '{s+=$2} END {print s}')"
+        total=$(grep -ri -c -F "$termo" "$pastaFonteLogs" | awk -F':' '{s+=$2} END {print s}')
         printf "%10s | %-50s\n" "$total" "$termo" >> "$nomeArquivoMensagensNegocio"
     done
 
@@ -908,7 +1056,7 @@ process_logs() {
         rm -f "$nomeArquivoAcumCond"
         while IFS= read -r line; do
             processaAcum "$line" "$regex" "$nomeArquivoAcumCondTmp1" "$condicao"
-        done < <(grep -E -ri "$regex" "$pastaLogsNormalizados")
+        done < <(grep -E -ri "$regex" "$pastaFonteLogs")
         if [ -f "$nomeArquivoAcumCondTmp1" ]; then
           uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaBaseExtracoes/$nomeArquivoAcumCond"
           rm -f "$nomeArquivoAcumCondTmp1"

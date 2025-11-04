@@ -16,3 +16,12 @@ chavePrivada=chaveprivada.key
 # Pasta onde será armazenado o resultado do scan
 stagePath="resultado"
 
+# Arquivo de modelo com as regras a serem aplicadas
+modeloArquivo="modelo_ufsm.inc"
+
+# Indica se os logs precisam ser normalizados (formato Kubelet)
+normalizaLogs=false
+
+# Regex base do pacote para remover prefixos ao agrupar módulos/classes
+baseModule="br\.ufsm\.cpd\.sie"
+#baseModule="br\.ufrn"
