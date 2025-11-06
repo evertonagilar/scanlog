@@ -278,8 +278,10 @@ gerar_top_metodos_pesados() {
     }
     END {
         for (metodo in count) {
-            media = total[metodo] / count[metodo]
-            printf "%s|%d|%.2f|%d\n", metodo, count[metodo], media, max[metodo]
+            media_ms = total[metodo] / count[metodo]
+            media_s = media_ms / 1000
+            max_s = max[metodo] / 1000
+            printf "%s|%d|%.6f|%.6f\n", metodo, count[metodo], media_s, max_s
         }
     }
     ' "$arquivoEntrada" > "$tmpAggregated"
@@ -290,15 +292,15 @@ gerar_top_metodos_pesados() {
         return
     fi
 
-    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 30 > "$tmpTop"
+    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 60 > "$tmpTop"
 
     awk -F'|' '
     BEGIN {
-        printf "%-4s | %-8s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Média (ms)", "Máx (ms)", "Método"
-        printf "%-4s-+-%-8s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "-----------", "----------", "------"
+        printf "%-4s | %-8s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Média (seg)", "Máx (seg)", "Método"
+        printf "%-4s-+-%-8s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "-----------", "---------", "------"
     }
     {
-        printf "%4d | %8d | %11.2f | %10d | %s\n", NR, $2, $3, $4, $1
+        printf "%4d | %8d | %11.3f | %10.3f | %s\n", NR, $2, $3, $4, $1
     }
     ' "$tmpTop" > "$arquivoSaida"
 
@@ -362,8 +364,11 @@ gerar_top_classes_usadas() {
     }
     END {
         for (classe in count) {
-            media = total[classe] / count[classe]
-            printf "%s|%d|%d|%.2f|%d\n", classe, count[classe], total[classe], media, max[classe]
+            media_ms = total[classe] / count[classe]
+            total_s = total[classe] / 1000
+            media_s = media_ms / 1000
+            max_s = max[classe] / 1000
+            printf "%s|%d|%.6f|%.6f|%.6f\n", classe, count[classe], total_s, media_s, max_s
         }
     }
     ' "$arquivoEntrada" > "$tmpAggregated"
@@ -374,15 +379,15 @@ gerar_top_classes_usadas() {
         return
     fi
 
-    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 30 > "$tmpTop"
+    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 60 > "$tmpTop"
 
     awk -F'|' '
     BEGIN {
-        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (ms)", "Média (ms)", "Máx (ms)", "Classe"
-        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "-----------", "----------", "------"
+        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (seg)", "Média (seg)", "Máx (seg)", "Classe"
+        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "------------", "----------", "------"
     }
     {
-        printf "%4d | %8d | %12d | %11.2f | %10d | %s\n", NR, $2, $3, $4, $5, $1
+        printf "%4d | %8d | %12.3f | %11.3f | %10.3f | %s\n", NR, $2, $3, $4, $5, $1
     }
     ' "$tmpTop" > "$arquivoSaida"
 
@@ -449,8 +454,11 @@ gerar_top_modulos_pesados() {
     }
     END {
         for (modulo in count) {
-            media = total[modulo] / count[modulo]
-            printf "%s|%d|%d|%.2f|%d\n", modulo, count[modulo], total[modulo], media, max[modulo]
+            media_ms = total[modulo] / count[modulo]
+            total_s = total[modulo] / 1000
+            media_s = media_ms / 1000
+            max_s = max[modulo] / 1000
+            printf "%s|%d|%.6f|%.6f|%.6f\n", modulo, count[modulo], total_s, media_s, max_s
         }
     }
     ' "$arquivoEntrada" > "$tmpAggregated"
@@ -461,15 +469,15 @@ gerar_top_modulos_pesados() {
         return
     fi
 
-    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 30 > "$tmpTop"
+    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 60 > "$tmpTop"
 
     awk -F'|' '
     BEGIN {
-        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (ms)", "Média (ms)", "Máx (ms)", "Módulo"
-        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "-----------", "----------", "------"
+        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (seg)", "Média (seg)", "Máx (seg)", "Módulo"
+        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "------------", "----------", "------"
     }
     {
-        printf "%4d | %8d | %12d | %11.2f | %10d | %s\n", NR, $2, $3, $4, $5, $1
+        printf "%4d | %8d | %12.3f | %11.3f | %10.3f | %s\n", NR, $2, $3, $4, $5, $1
     }
     ' "$tmpTop" > "$arquivoSaida"
 
@@ -744,8 +752,11 @@ gerar_top_modulos_subsistema() {
     }
     END {
         for (identificador in count) {
-            media = total[identificador] / count[identificador]
-            printf "%s|%d|%d|%.2f|%d\n", identificador, count[identificador], total[identificador], media, max[identificador]
+            media_ms = total[identificador] / count[identificador]
+            total_s = total[identificador] / 1000
+            media_s = media_ms / 1000
+            max_s = max[identificador] / 1000
+            printf "%s|%d|%.6f|%.6f|%.6f\n", identificador, count[identificador], total_s, media_s, max_s
         }
     }
     ' "$arquivoEntrada" > "$tmpAggregated"
@@ -756,15 +767,15 @@ gerar_top_modulos_subsistema() {
         return
     fi
 
-    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 30 > "$tmpTop"
+    sort -t'|' -k3,3nr -k4,4nr "$tmpAggregated" 2>/dev/null | head -n 60 > "$tmpTop"
 
     awk -F'|' '
     BEGIN {
-        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (ms)", "Média (ms)", "Máx (ms)", "Módulo/Subsistema"
-        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "-----------", "----------", "-------------------"
+        printf "%-4s | %-8s | %-12s | %-11s | %-10s | %s\n", "Rank", "Chamadas", "Total (seg)", "Média (seg)", "Máx (seg)", "Módulo/Subsistema"
+        printf "%-4s-+-%-8s-+-%-12s-+-%-11s-+-%-10s-+-%s\n", "----", "--------", "------------", "------------", "----------", "-------------------"
     }
     {
-        printf "%4d | %8d | %12d | %11.2f | %10d | %s\n", NR, $2, $3, $4, $5, $1
+        printf "%4d | %8d | %12.3f | %11.3f | %10.3f | %s\n", NR, $2, $3, $4, $5, $1
     }
     ' "$tmpTop" > "$arquivoSaida"
 
@@ -898,19 +909,19 @@ report_data = {
     'mensagensNegocio': parse_table(base_dir / 'indicadores' / 'tabela-mensagens-negocio.txt', ['int:quantidade', 'mensagem']),
     'desempenho': parse_performance(base_dir / 'extracoes' / 'stats_performance_percentis.log'),
     'topClasses': parse_ranked(base_dir / 'extracoes' / 'top_classes_usadas.log', [
-        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'classe')
+        ('int', 'rank'), ('int', 'chamadas'), ('float', 'total_s'), ('float', 'media_s'), ('float', 'max_s'), ('str', 'classe')
     ]),
     'topMetodos': parse_ranked(base_dir / 'extracoes' / 'top_metodos_pesados.log', [
-        ('int', 'rank'), ('int', 'chamadas'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'metodo')
+        ('int', 'rank'), ('int', 'chamadas'), ('float', 'media_s'), ('float', 'max_s'), ('str', 'metodo')
     ]),
     'topUsoMetodos': parse_ranked(base_dir / 'extracoes' / 'top_uso_metodo.log', [
         ('int', 'rank'), ('int', 'chamadas'), ('str', 'metodo')
     ]),
     'topModulos': parse_ranked(base_dir / 'extracoes' / 'top_modulos_pesados.log', [
-        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'modulo')
+        ('int', 'rank'), ('int', 'chamadas'), ('float', 'total_s'), ('float', 'media_s'), ('float', 'max_s'), ('str', 'modulo')
     ]),
     'topModulosSubsistema': parse_ranked(base_dir / 'extracoes' / 'top_modulos_subsistema.log', [
-        ('int', 'rank'), ('int', 'chamadas'), ('int', 'total_ms'), ('float', 'media_ms'), ('int', 'max_ms'), ('str', 'modulo')
+        ('int', 'rank'), ('int', 'chamadas'), ('float', 'total_s'), ('float', 'media_s'), ('float', 'max_s'), ('str', 'modulo_subsistema')
     ]),
 }
 
