@@ -65,6 +65,10 @@ if [[ -z "${normalizaQuebra:-}" ]]; then
     normalizaQuebra="false"
 fi
 
+if [[ -z "${normalizaLogsJBoss:-}" ]]; then
+    normalizaLogsJBoss="false"
+fi
+
 if [[ -z "${baseModule:-}" ]]; then
     baseModule="br\.ufsm\.cpd\.sie"
 fi
@@ -203,6 +207,98 @@ remover_quebras_logs() {
         local arquivoDestino="$pastaDestino/$caminhoRel"
         mkdir -p "$(dirname "$arquivoDestino")"
         sed -e 's/\\n\\t/ /g' -e 's/\\n/ /g' -e 's/\\t/ /g' "$arquivo" | tr '\t' ' ' > "$arquivoDestino"
+    done
+}
+
+normalizar_logs_jboss() {
+    local pastaOrigem="$1"
+    local pastaDestino="$2"
+
+    echo -e "\n🪄 Unificando entradas dos logs JBoss..."
+    rm -rf "$pastaDestino"
+    mkdir -p "$pastaDestino"
+
+    find "$pastaOrigem" -type f -name "*.log" -print0 | while IFS= read -r -d '' arquivo; do
+        local caminhoRel="${arquivo#$pastaOrigem/}"
+        local arquivoDestino="$pastaDestino/$caminhoRel"
+        mkdir -p "$(dirname "$arquivoDestino")"
+
+        python3 - "$arquivo" "$arquivoDestino" <<'PY'
+import pathlib
+import re
+import sys
+
+origem = pathlib.Path(sys.argv[1])
+destino = pathlib.Path(sys.argv[2])
+
+try:
+    linhas = origem.read_text(encoding='utf-8', errors='ignore').splitlines()
+except Exception as exc:  # noqa: BLE001
+    print(f'⚠️ Não foi possível ler {origem}: {exc}')
+    destino.write_text('', encoding='utf-8')
+    sys.exit(0)
+
+timestamp_re = re.compile(
+    r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}\s+\w+\s+\[[^\]]+\]\s+\([^)]*\)\s+.*'
+)
+prefix_re = re.compile(
+    r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}\s+\w+\s+\[[^\]]+\]\s+\([^)]*\)\s*'
+)
+
+def formata_bloco(bloco):
+    if not bloco:
+        return ''
+    primeira = bloco[0].rstrip()
+    linhas_formatadas = [primeira]
+    for linha in bloco[1:]:
+        marcador_stack = 'STACK::'
+        if linha.startswith(marcador_stack):
+            texto = linha[len(marcador_stack):].rstrip()
+        else:
+            texto = linha.rstrip()
+        if not texto:
+            continue
+        texto = prefix_re.sub('', texto, count=1)
+        texto = texto.lstrip()
+        if not texto:
+            continue
+        if texto.startswith('at ') or texto.startswith('Caused by') or texto.startswith('...'):
+            linhas_formatadas.append(r'\n' + texto)
+        else:
+            if linhas_formatadas:
+                linhas_formatadas[-1] = linhas_formatadas[-1] + ' ' + texto
+            else:
+                linhas_formatadas.append(texto)
+    return '\n'.join(linhas_formatadas)
+
+blocos = []
+bloco_atual = []
+
+for linha in linhas:
+    match = timestamp_re.match(linha)
+    if match:
+        resto = prefix_re.sub('', linha, count=1).lstrip()
+        if bloco_atual and resto and (resto.startswith('at ') or resto.startswith('Caused by') or resto.startswith('...')):
+            bloco_atual.append('STACK::' + resto)
+            continue
+        if bloco_atual:
+            blocos.append(formata_bloco(bloco_atual))
+        bloco_atual = [linha]
+    else:
+        if bloco_atual:
+            conteudo = linha.lstrip()
+            if conteudo.startswith('at ') or conteudo.startswith('Caused by') or conteudo.startswith('...'):
+                bloco_atual.append('STACK::' + conteudo)
+            else:
+                bloco_atual.append(linha)
+        else:
+            bloco_atual = [linha]
+
+if bloco_atual:
+    blocos.append(formata_bloco(bloco_atual))
+
+destino.write_text('\n'.join(blocos) + ('\n' if blocos else ''), encoding='utf-8')
+PY
     done
 }
 
@@ -944,6 +1040,7 @@ process_logs() {
     local pastaLogs="$pastaBase/logs"
     local pastaLogsNormalizados="$pastaBase/logs-normalizados"
     local pastaLogsSemQuebra="$pastaBase/logs-sem-quebra"
+    local pastaLogsJBossUnificados="$pastaBase/logs-jboss-unificados"
     local pastaBaseResult="$pastaBase/result"
     local pastaBaseIndicadores="$pastaBaseResult/indicadores"
     local pastaBaseExtracoes="$pastaBaseResult/extracoes"
@@ -976,11 +1073,16 @@ process_logs() {
 
     copiar_logs_servidores "$data" "$pastaLogs"
 
+    pastaFonteLogs="$pastaLogs"
+
+    if [[ "${normalizaLogsJBoss,,}" == "true" ]]; then
+        normalizar_logs_jboss "$pastaFonteLogs" "$pastaLogsJBossUnificados"
+        pastaFonteLogs="$pastaLogsJBossUnificados"
+    fi
+
     if [[ "${normalizaLogs,,}" == "true" ]]; then
-        normalizar_logs_mensagens "$pastaLogs" "$pastaLogsNormalizados"
+        normalizar_logs_mensagens "$pastaFonteLogs" "$pastaLogsNormalizados"
         pastaFonteLogs="$pastaLogsNormalizados"
-    else
-        pastaFonteLogs="$pastaLogs"
     fi
 
     if [[ "${removeQuebras,,}" == "true" ]]; then
