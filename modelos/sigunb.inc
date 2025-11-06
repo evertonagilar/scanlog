@@ -17,6 +17,11 @@
 # 27/10/2024  Everton Agilar    Revisao abrangente com extratores e contadores adicionais
 ########################################################################################################
 
+# Lista de servidores com os caminhos dos logs
+declare -a servidores=(
+  "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-unb/*.log"
+)
+
 #
 # Lista de parâmetros para extratores de log.
 #

@@ -36,6 +36,11 @@
 # 10/08/2024  Everton Agilar    Versão inicial
 ########################################################################################################
 
+# Lista de servidores com os caminhos dos logs
+declare -a servidores=(
+  "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-ufsm/*.log"
+)
+
 #
 # Lista de parâmetros para extratores de log.
 #

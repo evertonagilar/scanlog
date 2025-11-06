@@ -944,8 +944,9 @@ process_logs() {
     local pastaLogs="$pastaBase/logs"
     local pastaLogsNormalizados="$pastaBase/logs-normalizados"
     local pastaLogsSemQuebra="$pastaBase/logs-sem-quebra"
-    local pastaBaseIndicadores="$pastaBase/result/indicadores"
-    local pastaBaseExtracoes="$pastaBase/result/extracoes"
+    local pastaBaseResult="$pastaBase/result"
+    local pastaBaseIndicadores="$pastaBaseResult/indicadores"
+    local pastaBaseExtracoes="$pastaBaseResult/extracoes"
     local pastaReportTemplate="$WORKDIR/report"
     local pastaReportDestino="$pastaBase/report"
     local nomeArquivoContador="$(mktemp)"
@@ -958,16 +959,12 @@ process_logs() {
     echo -e "\n🧯 Iniciando a análise em $data\n"
     echo "Pasta destino dos logs: $pastaLogs"
 
+    rm -rf "$stagePath"
     mkdir -p "$stagePath"
     mkdir -p "$pastaBase"
     mkdir -p "$pastaLogs"
     mkdir -p "$pastaBaseExtracoes"
     mkdir -p "$pastaBaseIndicadores"
-    rm -f "$pastaBaseExtracoes"/*.log
-    rm -f "$pastaBaseIndicadores"/*.txt
-    rm -rf "$pastaLogsNormalizados"
-    rm -rf "$pastaLogsSemQuebra"
-    rm -rf "$pastaReportDestino"
 
     if [[ -d "$pastaReportTemplate" ]]; then
         cp -R "$pastaReportTemplate" "$pastaBase/"
