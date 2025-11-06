@@ -20,6 +20,12 @@
 #
 # Lista de parâmetros para extratores de log.
 #
+# Regex para identificar os serviços presentes nas mensagens de log.
+patternNomeService='([A-Za-z0-9_.]+MBean)'
+
+# Regex base para identificar pacote do próprio sistema
+baseModule="br\.ufrn"
+
 # Layout:
 # texto a pesquisar | exibir X linhas após o padrão encontrado | exibir X linhas antes do padrão encontrado | nome do arquivo para salvar o resultado
 #

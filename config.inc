@@ -2,9 +2,8 @@
 
 
 # Lista de servidores com os caminhos dos logs
-# Pode ser caminho SSH, sendo que nesse caso é preciso ter chave ssh para o scan conseguir copiar os logs
 declare -a servidores=(
-  "evertonagilar@localhost:/home/evertonagilar/devops/ufsm/ufsm-scanlog/logs/*.log"
+  "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-ufsm/*.log"
 )
 
 # Porta ssh
@@ -19,9 +18,13 @@ stagePath="resultado"
 # Arquivo de modelo com as regras a serem aplicadas
 modeloArquivo="modelo_ufsm.inc"
 
-# Indica se os logs precisam ser normalizados (formato Kubelet)
+# Indica se os logs precisam ser normalizados campos do Kubelet
 normalizaLogs=false
 
-# Regex base do pacote para remover prefixos ao agrupar módulos/classes
-baseModule="br\.ufsm\.cpd\.sie"
-#baseModule="br\.ufrn"
+# Remove quebra antes de processar
+removeQuebras=false      # Remover \n\t 
+
+# Normaliza quebra após processar para facilitar leitura
+normalizaQuebra=true
+
+

@@ -1,9 +1,11 @@
 # ufsm-scanlog
 
 
-## Executar o ufsm-scanlog em um container
+## Executar o scanlog em um container
 
 ```bash
-docker build -t ufsm-scanlog .
-docker run -it --rm -v $(pwd)/config.inc:/opt/config.inc -v $(pwd)/modelo.inc:/opt/modelo.inc -v $(pwd)/chaveprivada.key:/opt/chaveprivada.key  --name=scan ufsm-scanlog bash
+docker build -t scanlog .
+docker run -it --rm --workdir /opt/scan \
+        -v $(pwd):/opt/scan \
+        /usr/local/bin/scanlog.sh --modelo=sieweb
 ```
