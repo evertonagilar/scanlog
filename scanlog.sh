@@ -248,8 +248,9 @@ prefix_re = re.compile(
 def formata_bloco(bloco):
     if not bloco:
         return ''
-    primeira = bloco[0].rstrip()
-    linhas_formatadas = [primeira]
+    primeira = bloco[0].rstrip().replace('\r', '').replace('\t', ' ')
+    primeira = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', primeira)
+    acumulado = primeira
     for linha in bloco[1:]:
         marcador_stack = 'STACK::'
         if linha.startswith(marcador_stack):
@@ -259,17 +260,15 @@ def formata_bloco(bloco):
         if not texto:
             continue
         texto = prefix_re.sub('', texto, count=1)
-        texto = texto.lstrip()
+        texto = texto.lstrip().replace('\r', '').replace('\t', ' ')
+        texto = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', texto)
         if not texto:
             continue
         if texto.startswith('at ') or texto.startswith('Caused by') or texto.startswith('...'):
-            linhas_formatadas.append(r'\n' + texto)
+            acumulado += r'\n\t' + texto
         else:
-            if linhas_formatadas:
-                linhas_formatadas[-1] = linhas_formatadas[-1] + ' ' + texto
-            else:
-                linhas_formatadas.append(texto)
-    return '\n'.join(linhas_formatadas)
+            acumulado += ' ' + texto
+    return acumulado
 
 blocos = []
 bloco_atual = []
@@ -1096,9 +1095,9 @@ process_logs() {
 
     echo "⏳ Processando extratores de texto simples..."
     for entry in "${extratoresArray[@]}"; do
-        IFS='|' read -r termo contexto_a contexto_b arquivo <<< "$entry"
-        echo "Comando: grep -ri -F \"$termo\" -A \"$contexto_a\" -B \"$contexto_b\" \"$pastaFonteLogs\" > $pastaBaseExtracoes/$arquivo"
-        grep -ri -F "$termo" -A "$contexto_a" -B "$contexto_b" "$pastaFonteLogs" > "$pastaBaseExtracoes/$arquivo"
+        IFS='|' read -r termo arquivo <<< "$entry"
+        echo "Comando: grep -ri -F \"$termo\" \"$pastaFonteLogs\" > $pastaBaseExtracoes/$arquivo"
+        grep -ri -F "$termo" "$pastaFonteLogs" > "$pastaBaseExtracoes/$arquivo"
     done
     gerar_top_metodos_pesados "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_metodos_pesados.log"
     gerar_top_uso_metodos "$pastaFonteLogs" "$pastaBaseExtracoes/top_uso_metodo.log"
