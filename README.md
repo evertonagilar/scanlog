@@ -1,4 +1,4 @@
-# ufsm-scanlog
+# scanlog
 
 
 ## Executar o scanlog em um container
