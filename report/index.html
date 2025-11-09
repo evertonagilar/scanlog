@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatório UFSM Scan</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --bg-color: #e8eef5;
+      --card-bg: #ffffff;
+      --border-color: #c8d6e4;
+      --accent-color: #003b6f;
+      --accent-muted: #d2e0f1;
+      --text-color: #1e2f45;
+      --text-muted: #4c6584;
+      --highlight-color: #0071bc;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #101d2c;
+        --card-bg: #182a3f;
+        --border-color: #29415d;
+        --accent-color: #4aa1e0;
+        --accent-muted: #14304c;
+        --text-color: #e6edf5;
+        --text-muted: #9bb7d5;
+        --highlight-color: #7fc4ff;
+      }
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);
+      color: #fff;
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.9rem;
+      letter-spacing: .02em;
+    }
+    header p {
+      margin: .75rem auto 0;
+      max-width: 720px;
+      line-height: 1.5;
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.9);
+    }
+
+    header {
+  background: linear-gradient(135deg, #002a5c 0%, #0078d7 100%);
+  color: #fff;
+  padding: 3rem 1.5rem 2.5rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 30, 60, 0.3);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 6px solid #004b9b; /* Borda sólida azul institucional */
+}
+
+header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.15), transparent 70%);
+  opacity: 0.6;
+}
+
+header h1 {
+  position: relative;
+  margin: 0;
+  font-size: 2.3rem;
+  letter-spacing: .03em;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+header p {
+  position: relative;
+  margin: 1rem auto 0;
+  max-width: 720px;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Versão dark mode */
+@media (prefers-color-scheme: dark) {
+  header {
+    background: linear-gradient(135deg, #004b9b 0%, #33b0ff 100%);
+    border-bottom: 6px solid #66c3ff; /* Azul claro vibrante */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  header::before {
+    background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.2), transparent 75%);
+  }
+}
+
+    main {
+      flex: 1;
+      margin-top: -2.5rem;
+      padding: 0 clamp(1rem, 4vw, 5rem) 4rem;
+    }
+    section {
+      margin: 0 0 2.5rem;
+      width: 100%;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.75rem;
+      box-shadow: 0 20px 45px -28px rgba(15, 23, 42, 0.35);
+      width: 100%;
+    }
+    h2 {
+      font-size: 1.4rem;
+      margin: 0 0 1.2rem;
+      letter-spacing: .01em;
+      color: var(--accent-color);
+    }
+    h3 {
+      font-size: 1.15rem;
+      margin: 2rem 0 1rem;
+      color: var(--highlight-color);
+    }
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+    @media (min-width: 720px) {
+      .grid.metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .metric {
+      border-radius: 12px;
+      padding: 1.2rem;
+      border: 1px solid var(--border-color);
+      background: linear-gradient(135deg, var(--card-bg), var(--accent-muted));
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+    .metric span:first-child {
+      text-transform: uppercase;
+      font-size: .75rem;
+      letter-spacing: .12em;
+      color: var(--text-muted);
+    }
+    .metric strong {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--highlight-color);
+    }
+    dl {
+      margin: 0;
+      display: grid;
+      gap: .6rem;
+    }
+    dt {
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    dd {
+      margin: 0;
+      font-family: ui-monospace, "SFMono-Regular", SFMono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--text-color);
+      word-break: break-word;
+    }
+    ul {
+      padding-left: 1.1rem;
+      margin: .6rem 0 0;
+      color: var(--text-muted);
+    }
+    ul li {
+      margin-bottom: .4rem;
+      line-height: 1.5;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .95rem;
+      margin: 1rem 0;
+    }
+    thead {
+      background: var(--accent-muted);
+    }
+    th, td {
+      padding: .65rem .75rem;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+    th {
+      text-transform: uppercase;
+      font-size: .75rem;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+    }
+    td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .bar {
+      height: .55rem;
+      border-radius: 999px;
+      background: var(--accent-muted);
+      overflow: hidden;
+      margin-top: .4rem;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-color), var(--highlight-color));
+      transition: width .6s ease;
+    }
+    .muted {
+      color: var(--text-muted);
+      font-size: .9rem;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem clamp(0.75rem, 4vw, 4rem) 3rem;
+      color: var(--text-muted);
+      font-size: .9rem;
+    }
+    .loading,
+    .error {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+    .error {
+      color: #ef4444;
+      font-weight: 600;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: .35; }
+      50% { opacity: .8; }
+    }
+    .pulse {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    
+  </style>
+
+  
+</head>
+<body>
+  <header>
+    <h1>Relatório ufsm-scanlog</h1>
+    <p>Resumo consolidado das extrações e indicadores reunidos a partir dos logs processados</p>
+  </header>
+  <main>
+    <section id="overview" class="card">
+      <div class="grid two" id="overviewCards">
+        <div>
+          <h3>Detalhes da execução</h3>
+          <dl>
+            <div>
+              <dt>Execução referencia</dt>
+              <dd id="execucaoRef" class="pulse">Carregando…</dd>
+            </div>
+            <div>
+              <dt>Arquivo fonte</dt>
+              <dd id="fonteDados" class="pulse">Carregando…</dd>
+            </div>
+            <div>
+              <dt>Relatório gerado em</dt>
+              <dd id="geradoEm" class="pulse">Carregando…</dd>
+            </div>
+          </dl>
+        </div>
+        <div>
+          <h3>Destaques automáticos</h3>
+          <ul id="highlights">
+            <li class="pulse">Aguardando consolidação dos dados…</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="performance" class="card">
+      <h2>Indicadores de desempenho</h2>
+      <div class="grid metrics" id="metricCards"></div>
+      <div id="performanceDetails"></div>
+    </section>
+
+    <section id="contadores" class="card">
+      <h2>Contadores consolidados</h2>
+      <p class="muted">Listagem completa dos contadores processados. Ordenados pela quantidade de ocorrências.</p>
+      <div id="contadoresTable"></div>
+      <h3>Top contadores (visual)</h3>
+      <div id="contadoresBars"></div>
+    </section>
+
+    <section id="mensagens" class="card">
+      <h2>Mensagens de negócio mais frequentes</h2>
+      <p class="muted">Mensagens funcionais agrupadas e totalizadas a partir dos logs normalizados.</p>
+      <div id="mensagensTable"></div>
+    </section>
+
+    <section id="tops" class="card">
+      <h2>Serviços com maior consumo</h2>
+      <div id="topsContent"></div>
+    </section>
+  </main>
+  <script>
+    const formatter = new Intl.NumberFormat('pt-BR');
+    const decimalFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function el(tag, attrs = {}, children = []) {
+      const node = document.createElement(tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (key === 'class') {
+          node.className = value;
+        } else if (key === 'text') {
+          node.textContent = value;
+        } else if (key === 'html') {
+          node.innerHTML = value;
+        } else {
+          node.setAttribute(key, value);
+        }
+      });
+      if (!Array.isArray(children)) {
+        children = [children];
+      }
+      children.filter(Boolean).forEach(child => {
+        if (typeof child === 'string') {
+          node.appendChild(document.createTextNode(child));
+        } else {
+          node.appendChild(child);
+        }
+      });
+      return node;
+    }
+
+    function renderTable(containerId, columns, rows) {
+      const container = document.getElementById(containerId);
+      if (!rows || rows.length === 0) {
+        container.appendChild(el('p', { class: 'muted', text: 'Nenhum registro disponível.' }));
+        return;
+      }
+      const table = el('table');
+      const thead = el('thead');
+      const headRow = el('tr');
+      columns.forEach(col => headRow.appendChild(el('th', { text: col.label })));
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = el('tbody');
+      rows.forEach(row => {
+        const tr = el('tr');
+        columns.forEach(col => {
+          const value = row[col.key];
+          let display = value;
+          if (col.format === 'int') {
+            display = formatter.format(value);
+          } else if (col.format === 'float') {
+            display = decimalFormatter.format(value);
+          }
+          tr.appendChild(el('td', { class: col.align === 'right' ? 'num' : '', text: display }));
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      container.innerHTML = '';
+      container.appendChild(table);
+    }
+
+    function renderBars(containerId, rows, accessor, labelAccessor) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      if (!rows || rows.length === 0) {
+        container.appendChild(el('p', { class: 'muted', text: 'Sem dados para exibir.' }));
+        return;
+      }
+      const maxValue = rows.reduce((max, item) => Math.max(max, accessor(item)), 0);
+      rows.forEach(item => {
+        const value = accessor(item);
+        const percent = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
+        const wrapper = el('div', {}, [
+          el('strong', { text: labelAccessor(item) }),
+          el('div', { class: 'bar' }, el('span', { style: `width: ${percent}%`, class: 'bar-fill' })),
+          el('div', { class: 'muted', text: formatter.format(value) + ' ocorrências' })
+        ]);
+        container.appendChild(wrapper);
+      });
+    }
+
+    function buildMetricCards(data) {
+      const container = document.getElementById('metricCards');
+      container.innerHTML = '';
+      if (!data) {
+        container.appendChild(el('p', { class: 'muted', text: 'Indicadores não disponíveis.' }));
+        return;
+      }
+      const metrics = [
+        { label: 'Total de medições', key: 'total_medicoes', format: 'int' },
+        { label: 'Média (ms)', key: 'media_ms', format: 'float' },
+        { label: 'Percentil 95 (ms)', key: 'p95_ms', format: 'float' },
+        { label: 'Máximo (ms)', key: 'max_ms', format: 'int' }
+      ];
+      metrics.forEach(metric => {
+        if (metric.key in data) {
+          const value = metric.format === 'int' ? formatter.format(data[metric.key]) : decimalFormatter.format(data[metric.key]);
+          container.appendChild(el('div', { class: 'metric' }, [
+            el('span', { text: metric.label }),
+            el('strong', { text: value })
+          ]));
+        }
+      });
+
+      const details = document.getElementById('performanceDetails');
+      const hasDetail = ['p50_ms', 'p99_ms', 'min_ms'].some(key => key in data);
+      if (hasDetail) {
+        const list = el('dl');
+        ['p50_ms', 'p99_ms', 'min_ms'].forEach(key => {
+          if (key in data) {
+            const labelMap = {
+              p50_ms: 'Percentil 50 (ms)',
+              p99_ms: 'Percentil 99 (ms)',
+              min_ms: 'Mínimo (ms)'
+            };
+            list.appendChild(el('div', {}, [
+              el('dt', { text: labelMap[key] || key }),
+              el('dd', { text: formatter.format(data[key]) })
+            ]));
+          }
+        });
+        details.innerHTML = '';
+        details.appendChild(el('h3', { text: 'Percentis adicionais' }));
+        details.appendChild(list);
+      } else {
+        details.innerHTML = '';
+      }
+    }
+
+    function buildHighlights(data) {
+      const list = document.getElementById('highlights');
+      list.innerHTML = '';
+      const highlights = [];
+      if (data.contadores?.length) {
+        const top = [...data.contadores].sort((a, b) => b.quantidade - a.quantidade)[0];
+        if (top) {
+          highlights.push(`Maior contador: ${formatter.format(top.quantidade)} · ${top.descricao}.`);
+        }
+      }
+      if (data.mensagensNegocio?.length) {
+        const topMsg = [...data.mensagensNegocio].sort((a, b) => b.quantidade - a.quantidade)[0];
+        if (topMsg) {
+          highlights.push(`Mensagem funcional recorrente: ${formatter.format(topMsg.quantidade)} ocorrências de “${topMsg.mensagem}”.`);
+        }
+      }
+      if (data.topMetodos?.length) {
+        const metodo = [...data.topMetodos].sort((a, b) => b.media_ms - a.media_ms)[0];
+        if (metodo) {
+          highlights.push(`Método com maior tempo médio: ${metodo.metodo} (${decimalFormatter.format(metodo.media_ms)} ms).`);
+        }
+      }
+      if (highlights.length === 0) {
+        highlights.push('Nenhum destaque disponível.');
+      }
+      highlights.forEach(text => list.appendChild(el('li', { text })));
+    }
+
+    function renderTopSection(tops) {
+      const container = document.getElementById('topsContent');
+      container.innerHTML = '';
+      const configs = [
+        {
+          title: 'Top classes',
+          data: tops.topClasses,
+          columns: [
+            { key: 'classe', label: 'Classe' },
+            { key: 'chamadas', label: 'Chamadas', align: 'right', format: 'int' },
+            { key: 'total_ms', label: 'Total (ms)', align: 'right', format: 'int' },
+            { key: 'media_ms', label: 'Média (ms)', align: 'right', format: 'float' },
+            { key: 'max_ms', label: 'Máx (ms)', align: 'right', format: 'int' }
+          ]
+        },
+        {
+          title: 'Top métodos',
+          data: tops.topMetodos,
+          columns: [
+            { key: 'metodo', label: 'Método' },
+            { key: 'chamadas', label: 'Chamadas', align: 'right', format: 'int' },
+            { key: 'media_ms', label: 'Média (ms)', align: 'right', format: 'float' },
+            { key: 'max_ms', label: 'Máx (ms)', align: 'right', format: 'int' }
+          ]
+        },
+        {
+          title: 'Top módulos',
+          data: tops.topModulos,
+          columns: [
+            { key: 'modulo', label: 'Módulo' },
+            { key: 'chamadas', label: 'Chamadas', align: 'right', format: 'int' },
+            { key: 'total_ms', label: 'Total (ms)', align: 'right', format: 'int' },
+            { key: 'media_ms', label: 'Média (ms)', align: 'right', format: 'float' },
+            { key: 'max_ms', label: 'Máx (ms)', align: 'right', format: 'int' }
+          ]
+        },
+        {
+          title: 'Top módulos por subsistema',
+          data: tops.topModulosSubsistema,
+          columns: [
+            { key: 'modulo', label: 'Módulo/Subsistema' },
+            { key: 'chamadas', label: 'Chamadas', align: 'right', format: 'int' },
+            { key: 'total_ms', label: 'Total (ms)', align: 'right', format: 'int' },
+            { key: 'media_ms', label: 'Média (ms)', align: 'right', format: 'float' },
+            { key: 'max_ms', label: 'Máx (ms)', align: 'right', format: 'int' }
+          ]
+        }
+      ];
+
+      configs.forEach(cfg => {
+        const section = el('section');
+        section.appendChild(el('h3', { text: cfg.title }));
+        const tableId = `table-${cfg.title.replace(/\s+/g, '-').toLowerCase()}`;
+        section.appendChild(el('div', { id: tableId }));
+        container.appendChild(section);
+        renderTable(tableId, cfg.columns, cfg.data);
+      });
+    }
+
+    function populateHeader(data) {
+      document.getElementById('execucaoRef').textContent = data.execucao || '—';
+      document.getElementById('fonteDados').textContent = data.fonte || '—';
+      document.getElementById('geradoEm').textContent = data.geradoEm
+        ? new Date(data.geradoEm).toLocaleString('pt-BR')
+        : '—';
+      ['execucaoRef', 'fonteDados', 'geradoEm'].forEach(id => document.getElementById(id).classList.remove('pulse'));
+    }
+
+    function handleData(data) {
+      populateHeader(data);
+      buildHighlights(data);
+      buildMetricCards(data.desempenho);
+      renderTable('contadoresTable', [
+        { key: 'descricao', label: 'Descrição' },
+        { key: 'quantidade', label: 'Quantidade', align: 'right', format: 'int' }
+      ], (data.contadores || []).sort((a, b) => b.quantidade - a.quantidade));
+      renderBars('contadoresBars', (data.contadores || []).filter(item => item.quantidade > 0).slice(0, 8), item => item.quantidade, item => item.descricao);
+      renderTable('mensagensTable', [
+        { key: 'mensagem', label: 'Mensagem' },
+        { key: 'quantidade', label: 'Quantidade', align: 'right', format: 'int' }
+      ], (data.mensagensNegocio || []).sort((a, b) => b.quantidade - a.quantidade));
+      renderTopSection(data);
+    }
+
+    function showError(message) {
+      document.querySelector('main').innerHTML = '';
+      document.querySelector('main').appendChild(el('div', { class: 'error', text: message }));
+    }
+
+    fetch('data/report-data.json', { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Falha ao carregar report-data.json');
+        }
+        return response.json();
+      })
+      .then(handleData)
+      .catch(error => {
+        console.error(error);
+        showError('Não foi possível carregar os dados do relatório. Verifique o arquivo report-data.json.');
+      });
+  </script>
+</body>
+</html>
