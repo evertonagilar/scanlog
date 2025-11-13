@@ -41,7 +41,7 @@ declare -a servidores=(
   "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-ufsm/*.log"
 )
 
-# Indica se os logs precisam ser normalizados campos do Kubelet
+# Indica se os logs precisam ser normalizados
 normalizaLogs=false
 
 # Remove quebra antes de processar
@@ -50,7 +50,7 @@ removeQuebras=false      # Remover \n\t
 # Normaliza quebra após processar para facilitar leitura
 normalizaQuebra=true
 
-# Normaliza entradas do JBoss agrupando stacktrace em uma única linha
+# Normaliza entradas agrupando stacktrace em uma única linha
 normalizaLogsJBoss=false
 
 #
