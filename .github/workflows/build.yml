@@ -1,0 +1,15 @@
+name: Build Image
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: |
+          IMAGE_SHA_TAG="evertonagilar/scanlog:${{ github.sha }}"
+          docker build --pull --tag "$IMAGE_SHA_TAG" .
