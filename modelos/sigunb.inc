@@ -1,7 +1,7 @@
 ########################################################################################################
 #
 # Author: Everton de Vargas Agilar
-# Date: 27/10/2024
+# Date: 05/11/2025
 #
 # Modelo para o analisador de log ufsm-scanlog direcionado aos logs do JBoss 5.1
 #
@@ -13,8 +13,7 @@
 #
 # Data       |  Quem           |  Mensagem
 # -----------------------------------------------------------------------------------------------------
-# 26/10/2024  Everton Agilar    Versao inicial para logs JBoss 5.1
-# 27/10/2024  Everton Agilar    Revisao abrangente com extratores e contadores adicionais
+# 05/11/2025  Everton Agilar    Versao inicial para logs JBoss 5.1
 ########################################################################################################
 
 # Lista de servidores com os caminhos dos logs
@@ -22,7 +21,7 @@ declare -a servidores=(
   "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-unb/*.log"
 )
 
-# Indica se os logs precisam ser normalizados campos do Kubelet
+# Indica se os logs precisam ser normalizados
 normalizaLogs=false
 
 # Remove quebra antes de processar
@@ -31,7 +30,7 @@ removeQuebras=false      # Remover \n\t
 # Normaliza quebra após processar para facilitar leitura
 normalizaQuebra=true
 
-# Normaliza entradas do JBoss agrupando stacktrace em uma única linha
+# Normaliza entradas agrupando stacktrace em uma única linha
 normalizaLogsJBoss=true
 
 #

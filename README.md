@@ -19,9 +19,6 @@ Ferramenta de análise automatizada para concentrar, normalizar e extrair indica
    | `sieweb` | Modelo do SIEWEB |
 
    
-3. **🔑 Chave SSH**  
-   Garanta que o arquivo referencia um par válido e permissões adequadas (`chmod 600 chaveprivada.key`).
-
 ## 🖥️ Execução local
 ```bash
 ./scanlog.sh --modelo=sigunb
