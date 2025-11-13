@@ -302,16 +302,16 @@ PY
 }
 
 normalizar_quebras_arquivos() {
-    local pastaBase="$1"
+    local pastaAnalise="$1"
     local descricao="$2"
 
-    if [[ ! -d "$pastaBase" ]]; then
+    if [[ ! -d "$pastaAnalise" ]]; then
         return
     fi
 
     echo -e "\n🔁 Normalizando quebras nos arquivos de ${descricao}..."
 
-    find "$pastaBase" -type f -name "*.log" -print0 | while IFS= read -r -d '' arquivo; do
+    find "$pastaAnalise" -type f -name "*.log" -print0 | while IFS= read -r -d '' arquivo; do
         sed -i 's@\\n\\t@\n\t@g' "$arquivo";
         sed -i 's@\\nCaused@\n\tCaused@g' "$arquivo";
         sed -i 's@\\n"}}@"\n}}@g' "$arquivo";
@@ -878,10 +878,10 @@ gerar_top_modulos_subsistema() {
 }
 
 gerar_report_data() {
-    local pastaBase="$1"
+    local pastaAnalise="$1"
     local dataExecucao="$2"
-    local pastaResult="$pastaBase/result"
-    local pastaReport="$pastaBase/report"
+    local pastaResult="$pastaAnalise/result"
+    local pastaReport="$pastaAnalise/report"
     local destino="$pastaReport/data/report-data.json"
 
     echo "⏳ Gerando arquivo JSON para o relatório..."
@@ -1035,35 +1035,35 @@ PY
 # Função para processar logs para uma data específica
 process_logs() {
     local data=$(date +"%Y-%m-%d")
-    local pastaBase="$WORKDIR/$stagePath/logs-$data"
-    local pastaLogs="$pastaBase/logs"
-    local pastaLogsNormalizados="$pastaBase/logs-normalizados"
-    local pastaLogsSemQuebra="$pastaBase/logs-sem-quebra"
-    local pastaLogsJBossUnificados="$pastaBase/logs-jboss-unificados"
-    local pastaBaseResult="$pastaBase/result"
-    local pastaBaseIndicadores="$pastaBaseResult/indicadores"
-    local pastaBaseExtracoes="$pastaBaseResult/extracoes"
+    local pastaAnalise="$WORKDIR/$pastaResultado/${modeloSelecionado}/analise-$data"
+    local pastaLogs="$pastaAnalise/logs"
+    local pastaLogsNormalizados="$pastaAnalise/logs-normalizados"
+    local pastaLogsSemQuebra="$pastaAnalise/logs-sem-quebra"
+    local pastaLogsJBossUnificados="$pastaAnalise/logs-jboss-unificados"
+    local pastaAnaliseResult="$pastaAnalise/result"
+    local pastaAnaliseIndicadores="$pastaAnaliseResult/indicadores"
+    local pastaAnaliseExtracoes="$pastaAnaliseResult/extracoes"
     local pastaReportTemplate="$WORKDIR/report"
-    local pastaReportDestino="$pastaBase/report"
+    local pastaReportDestino="$pastaAnalise/report"
     local nomeArquivoContador="$(mktemp)"
     local nomeArquivoContadorTmp2="$(mktemp)"
-    local nomeArquivoContadorTabela="$pastaBaseIndicadores/tabela-contadores.txt"
-    local nomeArquivoMensagensNegocio="$pastaBaseIndicadores/tabela-mensagens-negocio.txt"
+    local nomeArquivoContadorTabela="$pastaAnaliseIndicadores/tabela-contadores.txt"
+    local nomeArquivoMensagensNegocio="$pastaAnaliseIndicadores/tabela-mensagens-negocio.txt"
     local pastaFonteLogs
     local pasta
 
     echo -e "\n🧯 Iniciando a análise em $data\n"
     echo "Pasta destino dos logs: $pastaLogs"
 
-    rm -rf "$stagePath"
-    mkdir -p "$stagePath"
-    mkdir -p "$pastaBase"
+    mkdir -p "$pastaResultado"
+    rm -rf "$pastaAnalise"
+    mkdir -p "$pastaAnalise"
     mkdir -p "$pastaLogs"
-    mkdir -p "$pastaBaseExtracoes"
-    mkdir -p "$pastaBaseIndicadores"
+    mkdir -p "$pastaAnaliseExtracoes"
+    mkdir -p "$pastaAnaliseIndicadores"
 
     if [[ -d "$pastaReportTemplate" ]]; then
-        cp -R "$pastaReportTemplate" "$pastaBase/"
+        cp -R "$pastaReportTemplate" "$pastaAnalise/"
     else
         echo "⚠️ Template de relatório não encontrado em \"$pastaReportTemplate\"."
     fi
@@ -1096,16 +1096,16 @@ process_logs() {
     echo "⏳ Processando extratores de texto simples..."
     for entry in "${extratoresArray[@]}"; do
         IFS='|' read -r termo arquivo <<< "$entry"
-        echo "Comando: grep -ri -F \"$termo\" \"$pastaFonteLogs\" > $pastaBaseExtracoes/$arquivo"
-        grep -ri -F "$termo" "$pastaFonteLogs" > "$pastaBaseExtracoes/$arquivo"
+        echo "Comando: grep -ri -F \"$termo\" \"$pastaFonteLogs\" > $pastaAnaliseExtracoes/$arquivo"
+        grep -ri -F "$termo" "$pastaFonteLogs" > "$pastaAnaliseExtracoes/$arquivo"
     done
-    gerar_top_metodos_pesados "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_metodos_pesados.log"
-    gerar_top_uso_metodos "$pastaFonteLogs" "$pastaBaseExtracoes/top_uso_metodo.log"
-    gerar_top_classes_usadas "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_classes_usadas.log"
-    gerar_top_modulos_pesados "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_modulos_pesados.log"
-    gerar_top_modulos_subsistema "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/top_modulos_subsistema.log"
-    gerar_percentis_performance "$pastaBaseExtracoes/alert_performance_warning.log" "$pastaBaseExtracoes/stats_performance_percentis.log"
-    #gerar_erros_mbean "$pastaFonteLogs" "$pastaBaseExtracoes"
+    gerar_top_metodos_pesados "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/top_metodos_pesados.log"
+    gerar_top_uso_metodos "$pastaFonteLogs" "$pastaAnaliseExtracoes/top_uso_metodo.log"
+    gerar_top_classes_usadas "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/top_classes_usadas.log"
+    gerar_top_modulos_pesados "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/top_modulos_pesados.log"
+    gerar_top_modulos_subsistema "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/top_modulos_subsistema.log"
+    gerar_percentis_performance "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/stats_performance_percentis.log"
+    #gerar_erros_mbean "$pastaFonteLogs" "$pastaAnaliseExtracoes"
 
     ##########################################################################################
 
@@ -1143,7 +1143,23 @@ process_logs() {
 
 
     echo "⏳ Ordenando contadores..."
-    cat "$nomeArquivoContador" | sort > "$nomeArquivoContadorTmp2"
+    awk -F'=' '
+        {
+            key = $1
+            value = $2
+            gsub(/^[ \t]+|[ \t]+$/, "", key)
+            gsub(/^[ \t]+|[ \t]+$/, "", value)
+            if (value == "" || value !~ /^-?[0-9]+$/) {
+                value = 0
+            }
+            soma[key] += value
+        }
+        END {
+            for (chave in soma) {
+                printf "%s = %d\n", chave, soma[chave]
+            }
+        }
+    ' "$nomeArquivoContador" | sort > "$nomeArquivoContadorTmp2"
     formatArquivoComoTabela "$nomeArquivoContadorTmp2" "$nomeArquivoContadorTabela"
     rm -f "$nomeArquivoContador"
     rm -f "$nomeArquivoContadorTmp2"
@@ -1160,7 +1176,7 @@ process_logs() {
             processaAcum "$line" "$regex" "$nomeArquivoAcumCondTmp1" "$condicao"
         done < <(grep -E -ri "$regex" "$pastaFonteLogs")
         if [ -f "$nomeArquivoAcumCondTmp1" ]; then
-          uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaBaseExtracoes/$nomeArquivoAcumCond"
+          uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaAnaliseExtracoes/$nomeArquivoAcumCond"
           rm -f "$nomeArquivoAcumCondTmp1"
         fi
     done
@@ -1168,11 +1184,11 @@ process_logs() {
     echo "-----------------------------------------------------------------------------------"
 
     if [[ "${normalizaQuebra,,}" == "true" ]]; then
-        normalizar_quebras_arquivos "$pastaBaseExtracoes" "extrações"
-        normalizar_quebras_arquivos "$pastaBaseIndicadores" "indicadores"
+        normalizar_quebras_arquivos "$pastaAnaliseExtracoes" "extrações"
+        normalizar_quebras_arquivos "$pastaAnaliseIndicadores" "indicadores"
     fi
 
-    gerar_report_data "$pastaBase" "$data"
+    gerar_report_data "$pastaAnalise" "$data"
 }
 
 ################################ MAIN ##########################################################
