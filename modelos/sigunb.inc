@@ -22,6 +22,18 @@ declare -a servidores=(
   "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-unb/*.log"
 )
 
+# Indica se os logs precisam ser normalizados campos do Kubelet
+normalizaLogs=false
+
+# Remove quebra antes de processar
+removeQuebras=false      # Remover \n\t 
+
+# Normaliza quebra após processar para facilitar leitura
+normalizaQuebra=true
+
+# Normaliza entradas do JBoss agrupando stacktrace em uma única linha
+normalizaLogsJBoss=true
+
 #
 # Lista de parâmetros para extratores de log.
 #

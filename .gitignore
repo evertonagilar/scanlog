@@ -1,5 +1,4 @@
 .idea/
-chaveprivada.key
-logs-ufsm/
-logs-unb/
+*.key
+logs*/
 resultado/
