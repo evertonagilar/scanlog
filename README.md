@@ -24,12 +24,22 @@ Ferramenta de análise automatizada para concentrar, normalizar e extrair indica
 ./scanlog.sh --modelo=sigunb
 ```
 
-## 📦 Execução em container
+## 📦 Build da imagem
 
 ```bash
 docker build -t scanlog .
-docker run -it --rm -v "$(pwd)":/opt/scan scanlog ./scanlog.sh --modelo=sieweb
 ```
+
+## 📦 Processar os logs
+```bash
+docker run -it --rm -v "$(pwd)":/opt/scan scanlog --modelo=sieweb
+```
+ou
+
+```bash
+docker run -it --rm -v "$(pwd)":/opt/scan scanlog --modelo=sigunb
+```
+
 
 > **Nota:** o container precisa conseguir acessar os servidores via SSH. Monte também sua chave ou utilize variáveis/volumes apropriados.
 
@@ -59,8 +69,10 @@ O arquivo `dashboard_streamlit.py` oferece uma interface web para navegar pelos 
    ```
 2. Execute o dashboard:
    ```bash
-   streamlit run dashboard_streamlit.py --server.port 8501
+   ./scanlog.sh --dashboard
    ```
+   - Opcional: `./scanlog.sh --dashboard --dashboard-port=9500` para trocar a porta (padrão 8501).
+   - Dentro do container Docker: `docker run --rm -p 8501:8501 scanlog ./scanlog.sh --dashboard`
 3. Escolha o modelo e a execução no painel lateral. A tabela de extrações permite abrir cada arquivo e baixar o conteúdo completo.
 
 ### 🔐 Execução com TLS
@@ -81,4 +93,3 @@ streamlit run --server.port=9500 \
               --server.sslCertFile cert.pem \
               --server.sslKeyFile key.pem dashboard_streamlit.py
 ```
-
