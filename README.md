@@ -47,3 +47,38 @@ resultado/
         └── report/
             └── data/report-data.json  # base para dashboards/HTML
 ```
+
+## 📊 Dashboard Streamlit
+O arquivo `dashboard_streamlit.py` oferece uma interface web para navegar pelos indicadores, tabelas e arquivos em `result/extracoes`.
+
+1. Crie/ative o ambiente virtual (opcional, mas recomendado):
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install --upgrade pip streamlit
+   ```
+2. Execute o dashboard:
+   ```bash
+   streamlit run dashboard_streamlit.py --server.port 8501
+   ```
+3. Escolha o modelo e a execução no painel lateral. A tabela de extrações permite abrir cada arquivo e baixar o conteúdo completo.
+
+### 🔐 Execução com TLS
+
+- Para gerar um par autoassinado para testes:
+  ```bash
+  openssl req -x509 -nodes -days 365 \
+    -newkey rsa:2048 \
+    -keyout key.pem \
+    -out cert.pem \
+    -subj "/CN=scanlog.local"
+  ```
+
+O Streamlit suporta TLS nativamente. Forneça os caminhos para o certificado e para a chave:
+```bash
+streamlit run --server.port=9500 \
+              --server.address 0.0.0.0 \
+              --server.sslCertFile cert.pem \
+              --server.sslKeyFile key.pem dashboard_streamlit.py
+```
+
