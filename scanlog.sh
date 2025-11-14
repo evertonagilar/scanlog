@@ -1096,8 +1096,8 @@ process_logs() {
     echo "⏳ Processando extratores de texto simples..."
     for entry in "${extratoresArray[@]}"; do
         IFS='|' read -r termo arquivo <<< "$entry"
-        echo "Comando: grep -ri -F \"$termo\" \"$pastaFonteLogs\" > $pastaAnaliseExtracoes/$arquivo"
-        grep -ri -F "$termo" "$pastaFonteLogs" > "$pastaAnaliseExtracoes/$arquivo"
+        echo "Comando: grep -r -h -i -F \"$termo\" \"$pastaFonteLogs\" > $pastaAnaliseExtracoes/$arquivo"
+        grep -r -h -i -F "$termo" "$pastaFonteLogs" > "$pastaAnaliseExtracoes/$arquivo"
     done
     gerar_top_metodos_pesados "$pastaAnaliseExtracoes/alert_performance_warning.log" "$pastaAnaliseExtracoes/top_metodos_pesados.log"
     gerar_top_uso_metodos "$pastaFonteLogs" "$pastaAnaliseExtracoes/top_uso_metodo.log"
@@ -1174,7 +1174,7 @@ process_logs() {
         rm -f "$nomeArquivoAcumCond"
         while IFS= read -r line; do
             processaAcum "$line" "$regex" "$nomeArquivoAcumCondTmp1" "$condicao"
-        done < <(grep -E -ri "$regex" "$pastaFonteLogs")
+        done < <(grep -E -r -h -i "$regex" "$pastaFonteLogs")
         if [ -f "$nomeArquivoAcumCondTmp1" ]; then
           uniq "$nomeArquivoAcumCondTmp1" | sort -n -r > "$pastaAnaliseExtracoes/$nomeArquivoAcumCond"
           rm -f "$nomeArquivoAcumCondTmp1"
