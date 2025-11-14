@@ -24,61 +24,26 @@ Ferramenta de análise automatizada para concentrar, normalizar e extrair indica
 ./scanlog.sh --modelo=sigunb
 ```
 
-## 📦 Execução em container
+## 📦 Build da imagem
 
 ```bash
 docker build -t scanlog .
-docker run -it --rm -v "$(pwd)":/opt/scan scanlog ./scanlog.sh --modelo=sieweb
 ```
 
-> **Nota:** o container precisa conseguir acessar os servidores via SSH. Monte também sua chave ou utilize variáveis/volumes apropriados.
-
-## 🗂️ Estrutura dos resultados
-```
-resultado/
-└── <modelo>/
-    └── analise-AAAA-MM-DD/
-        ├── logs/                      # cópia bruta dos servidores
-        ├── logs-jboss-unificados/     # normalização opcional
-        ├── logs-normalizados/
-        ├── result/
-        │   ├── extracoes/             # arquivos gerados pelos extratores/contadores
-        │   └── indicadores/           # tabelas agregadas
-        └── report/
-            └── data/report-data.json  # base para dashboards/HTML
-```
-
-## 📊 Dashboard Streamlit
-O arquivo `dashboard_streamlit.py` oferece uma interface web para navegar pelos indicadores, tabelas e arquivos em `result/extracoes`.
-
-1. Crie/ative o ambiente virtual (opcional, mas recomendado):
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install --upgrade pip streamlit
-   ```
-2. Execute o dashboard:
-   ```bash
-   streamlit run dashboard_streamlit.py --server.port 8501
-   ```
-3. Escolha o modelo e a execução no painel lateral. A tabela de extrações permite abrir cada arquivo e baixar o conteúdo completo.
-
-### 🔐 Execução com TLS
-
-- Para gerar um par autoassinado para testes:
-  ```bash
-  openssl req -x509 -nodes -days 365 \
-    -newkey rsa:2048 \
-    -keyout key.pem \
-    -out cert.pem \
-    -subj "/CN=scanlog.local"
-  ```
-
-O Streamlit suporta TLS nativamente. Forneça os caminhos para o certificado e para a chave:
+## 📦 Processar os logs
 ```bash
-streamlit run --server.port=9500 \
-              --server.address 0.0.0.0 \
-              --server.sslCertFile cert.pem \
-              --server.sslKeyFile key.pem dashboard_streamlit.py
+docker run -it --rm -v "$(pwd)":/opt/scan scanlog --modelo=sieweb
+```
+ou
+
+```bash
+docker run -it --rm -v "$(pwd)":/opt/scan scanlog --modelo=sigunb
+```
+
+
+## 📊 Dashboard
+
+```bash
+docker run -it --rm -v "$(pwd)":/opt/scan -p 8501:8501 scanlog --dashboard
 ```
 

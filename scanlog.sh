@@ -15,10 +15,13 @@
 # 10/08/2024  Everton Agilar    Versão inicial
 ########################################################################################################
 
-VERSAO_SCRIPT='1.1.0'
+VERSAO_SCRIPT='1.2.0'
 CURRENT_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 WORKDIR="$(pwd)"
 MODELOS_DIR="$WORKDIR/modelos"
+DASHBOARD_SCRIPT="$WORKDIR/dashboard_streamlit.py"
+DASHBOARD_PORT="${STREAMLIT_PORT:-8501}"
+DASHBOARD_MODE="false"
 
 # Carrega as variáveis de configuração dos IPs dos servidores
 source "$WORKDIR/config.inc"
@@ -27,6 +30,14 @@ modeloSelecionado=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --dashboard)
+            DASHBOARD_MODE="true"
+            shift
+            ;;
+        --dashboard-port=*)
+            DASHBOARD_PORT="${1#--dashboard-port=}"
+            shift
+            ;;
         --modelo=*)
             modeloSelecionado="${1#--modelo=}"
             shift
@@ -45,6 +56,18 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+if [[ "${DASHBOARD_MODE}" == "true" ]]; then
+    if ! command -v streamlit >/dev/null 2>&1; then
+        echo "❌ A dependência 'streamlit' não está instalada. Execute 'pip install streamlit'."
+        exit 1
+    fi
+    if [[ ! -f "$DASHBOARD_SCRIPT" ]]; then
+        echo "❌ Arquivo '$DASHBOARD_SCRIPT' não encontrado."
+        exit 1
+    fi
+    echo "🚀 Iniciando dashboard Streamlit em 0.0.0.0:${DASHBOARD_PORT}"
+    exec streamlit run "$DASHBOARD_SCRIPT" --server.address 0.0.0.0 --server.port "$DASHBOARD_PORT"
+fi
 
 if [[ -z "$modeloSelecionado" ]]; then
     echo "O parâmetro --modelo=sigunb|sieweb é necessário."
