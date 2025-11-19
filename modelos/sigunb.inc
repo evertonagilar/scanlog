@@ -18,7 +18,7 @@
 
 # Lista de servidores com os caminhos dos logs
 declare -a servidores=(
-  "evertonagilar@164.41.121.115:/home/evertonagilar/devops/scanlog/logs-unb/*.log"
+  "evertonagilar@127.0.0.1:/home/evertonagilar/devops/scanlog/logs-unb/*.log"
 )
 
 # Indica se os logs precisam ser normalizados
